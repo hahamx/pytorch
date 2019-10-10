@@ -989,7 +989,7 @@ def trace_module(mod,
     if not isinstance(inputs, dict):
         raise AttributeError("expected a dictionary of (method_name, input) pairs")
 
-
+    torch.jit._hack_traced_module_map = {}
     module = make_module(mod, _module_class, _compilation_unit, tuple(inputs.keys()))
 
     for method_name, example_inputs in inputs.items():
@@ -1681,6 +1681,7 @@ for name, method in _get_methods(torch.nn.Module):
     if name not in ScriptModule.__dict__ and name not in _compiled_methods_whitelist:
         setattr(ScriptModule, method.__name__, _make_fail(name))
 
+_hack_traced_module_map = {}
 
 class TracedModule(ScriptModule):
     __frozen = False
@@ -1718,6 +1719,8 @@ class TracedModule(ScriptModule):
             self._modules[name] = make_module(submodule, TracedModule, _compilation_unit)
 
         self._freeze()
+
+        _hack_traced_module_map[orig] = self
 
     def forward(self, *args, **kwargs):
         raise RuntimeError('Trace submodules cannot be called.')
